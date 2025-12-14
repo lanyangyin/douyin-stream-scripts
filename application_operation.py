@@ -499,14 +499,21 @@ class WindowController:
     @staticmethod
     def _match_template(screenshot_pil: Image.Image, template: Mat, confidence: float = 0.7) -> Tuple:
         """在截图中执行模板匹配"""
-        screenshot_cv = cv2.cvtColor(np.array(screenshot_pil), cv2.COLOR_RGB2BGR)
-        result = cv2.matchTemplate(screenshot_cv, template, cv2.TM_CCOEFF_NORMED)
-        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+        try:
+            screenshot_cv = cv2.cvtColor(np.array(screenshot_pil), cv2.COLOR_RGB2BGR)
+            result = cv2.matchTemplate(screenshot_cv, template, cv2.TM_CCOEFF_NORMED)
+            min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
 
-        if max_val < confidence:
+            if max_val < confidence:
+                return None, None, None
+
+            return max_loc, max_val, result.shape
+        except cv2.error as e:
+            print(f"❌ OpenCV模板匹配错误: {e}")
             return None, None, None
-
-        return max_loc, max_val, result.shape
+        except Exception as e:
+            print(f"❌ 模板匹配异常: {e}")
+            return None, None, None
 
     @staticmethod
     def _calculate_match_coordinates(match_loc: Tuple[int, int], template_size: Tuple[int, int],
