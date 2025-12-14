@@ -690,7 +690,7 @@ controller.find_window("Chrome_WidgetWin_1", "直播伴侣")  # 启动直播伴�
 #     ccw = controller.capture_window()
 #     if ccw:
 #         # ccw.show()
-#         print(controller.find_template("sec_failed_resume_live.png"))
+#         print(controller.find_template("main_start_live.png"))
 
 def start_live():
     start_live_is = False
@@ -706,7 +706,7 @@ def start_live():
                 if controller.find_template("main_stop_live.png"):
                     start_live_is = True
                     break
-                if controller.click_template("main_start_living.png"):
+                if controller.click_template("main_start_live.png"):
                     continue
                 if controller.click_template("main_live_stopped_return.png"):
                     continue
