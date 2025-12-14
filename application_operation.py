@@ -452,8 +452,21 @@ class WindowController:
         # 调整DPI缩放
         screenshot_scaled = self._scale_screenshot_to_template_dpi(screenshot, self.dpi_scale)
 
+        # 检查截图尺寸是否大于等于模板尺寸
+        screenshot_width, screenshot_height = screenshot_scaled.size
+        template_width, template_height = template_size
+
+        if screenshot_width < template_width or screenshot_height < template_height:
+            print(
+                f"⚠️  截图尺寸({screenshot_width}x{screenshot_height})小于模板尺寸({template_width}x{template_height})，无法匹配")
+            return None
+
         # 执行模板匹配
-        match_result = self._match_template(screenshot_scaled, template, confidence)
+        try:
+            match_result = self._match_template(screenshot_scaled, template, confidence)
+        except cv2.error as e:
+            print(f"❌ 模板匹配失败: {e}")
+            return None
 
         if match_result[0] is None:
             return None
