@@ -212,6 +212,11 @@ class WindowController:
 
             if not result:
                 print("❌ 窗口捕获失败")
+                # 清理资源
+                win32gui.DeleteObject(bitmap.GetHandle())
+                save_dc.DeleteDC()
+                mfc_dc.DeleteDC()
+                win32gui.ReleaseDC(self.hwnd, hwnd_dc)
                 return None
 
             # 转换为PIL图像
@@ -223,6 +228,16 @@ class WindowController:
                 (bmpinfo['bmWidth'], bmpinfo['bmHeight']),
                 bmpstr, 'raw', 'BGRX', 0, 1
             )
+
+            # 快速全黑检测
+            if self._is_image_mostly_black(im, threshold=0.99):
+                print("⚠️  截图可能为全黑或几乎全黑，可能是窗口最小化或不可见")
+                # 清理资源
+                win32gui.DeleteObject(bitmap.GetHandle())
+                save_dc.DeleteDC()
+                mfc_dc.DeleteDC()
+                win32gui.ReleaseDC(self.hwnd, hwnd_dc)
+                return None
 
             # 清理资源
             win32gui.DeleteObject(bitmap.GetHandle())
@@ -242,6 +257,130 @@ class WindowController:
         except Exception as e:
             print(f"❌ 截图失败: {e}")
             return None
+
+    def _is_image_mostly_black(self, image: Image.Image, threshold: float = 0.99) -> bool:
+        """
+        快速检测图像是否大部分为黑色
+
+        Args:
+            image: PIL图像对象
+            threshold: 黑色像素比例阈值，默认为0.99（99%）
+
+        Returns:
+            如果大部分为黑色返回True，否则返回False
+        """
+        # 方法1：使用缩略图快速检测（最快）
+        # 创建缩略图（大大减少像素数量，加快处理速度）
+        thumbnail_size = (16, 16)  # 16x16足够检测大部分情况
+        thumbnail = image.resize(thumbnail_size, Image.Resampling.NEAREST)
+
+        # 转换为灰度图
+        gray_thumb = thumbnail.convert('L')
+
+        # 获取像素数据（使用numpy提高速度）
+        import numpy as np
+        pixels = np.array(gray_thumb)
+
+        # 计算黑色像素比例（像素值<10视为黑色）
+        black_pixel_count = np.sum(pixels < 10)
+        total_pixels = pixels.size
+        black_ratio = black_pixel_count / total_pixels
+
+        # 如果黑色像素比例超过阈值，认为图像大部分为黑色
+        if black_ratio >= threshold:
+            return True
+
+        # 方法2：采样检测（更快但可能不够准确）
+        # 只在图像中采样部分像素
+        width, height = image.size
+        sample_points = 100  # 采样点数量
+
+        # 生成随机采样点
+        import random
+        random.seed(0)  # 设置固定种子以便重现结果
+
+        # 采样像素并检查
+        dark_count = 0
+        for _ in range(sample_points):
+            x = random.randint(0, width - 1)
+            y = random.randint(0, height - 1)
+
+            # 获取像素值（RGB）
+            pixel = image.getpixel((x, y))
+
+            # 计算亮度（简单平均）
+            brightness = sum(pixel) / 3
+
+            # 如果亮度小于10，认为是黑色
+            if brightness < 10:
+                dark_count += 1
+
+        # 如果大部分采样点都是黑色
+        if dark_count / sample_points >= threshold:
+            return True
+
+        return False
+
+    # 或者使用更快的版本（仅采样检测）：
+    def _is_image_mostly_black_fast(self, image: Image.Image, threshold: float = 0.99) -> bool:
+        """
+        更快速检测图像是否大部分为黑色（仅采样）
+
+        Args:
+            image: PIL图像对象
+            threshold: 黑色像素比例阈值，默认为0.99（99%）
+
+        Returns:
+            如果大部分为黑色返回True，否则返回False
+        """
+        width, height = image.size
+
+        # 采样点数量（可根据图像大小调整）
+        if width * height < 10000:
+            sample_points = 50
+        else:
+            sample_points = 100
+
+        # 预计算采样位置（避免在循环中生成随机数）
+        import random
+        random.seed(0)  # 固定种子
+
+        # 生成采样位置
+        sample_positions = [
+            (random.randint(0, width - 1), random.randint(0, height - 1))
+            for _ in range(sample_points)
+        ]
+
+        # 统计黑色像素数量
+        dark_count = 0
+
+        # 批量获取像素值（比单个getpixel快）
+        pixels = image.load()  # 获取像素访问对象
+
+        for x, y in sample_positions:
+            try:
+                pixel = pixels[x, y]
+                # 如果是RGBA模式，只取RGB
+                if len(pixel) == 4:
+                    r, g, b, a = pixel
+                else:
+                    r, g, b = pixel
+
+                # 计算亮度（加权平均，更符合人眼感知）
+                brightness = 0.299 * r + 0.587 * g + 0.114 * b
+
+                # 如果亮度小于阈值（15），认为是黑色
+                if brightness < 15:
+                    dark_count += 1
+
+                    # 如果已经超过阈值，提前返回
+                    if dark_count / sample_points >= threshold:
+                        return True
+            except:
+                # 如果坐标越界，跳过
+                continue
+
+        return dark_count / sample_points >= threshold
 
     def load_template(self, template_path: str) -> Tuple[Optional[Mat], Optional[Tuple[int, int]]]:
         """
@@ -272,7 +411,8 @@ class WindowController:
             return None, None
 
     def find_template(self, template_path: str, confidence: float = 0.7,
-                      use_last_screenshot: bool = False) -> Optional[Dict]:
+                      use_last_screenshot: bool = False,
+                      click_position_ratio: tuple = (0.5, 0.5)) -> Optional[Dict]:
         """
         在当前窗口中查找模板图像
 
@@ -280,6 +420,9 @@ class WindowController:
             template_path: 模板图像路径
             confidence: 匹配置信度阈值
             use_last_screenshot: 是否使用最后一张截图
+            click_position_ratio: 点击位置比例 (x_ratio, y_ratio)，范围0-1
+                                  默认(0.5, 0.5)表示中心点
+                                  (0, 0)表示左上角，(1, 1)表示右下角
 
         Returns:
             包含匹配信息的字典或None
@@ -287,6 +430,11 @@ class WindowController:
         if not self.hwnd:
             print("❌ 未设置窗口句柄")
             return None
+
+        # 验证比例参数
+        if not (0 <= click_position_ratio[0] <= 1 and 0 <= click_position_ratio[1] <= 1):
+            print("❌ 点击位置比例必须在0到1之间")
+            click_position_ratio = (0.5, 0.5)  # 使用默认值
 
         # 加载模板
         template, template_size = self.load_template(template_path)
@@ -310,16 +458,18 @@ class WindowController:
         if match_result[0] is None:
             return None
 
-        # 计算坐标
+        # 计算坐标，传递点击位置比例
         coordinates = self._calculate_match_coordinates(
-            match_result[0], template_size, self.dpi_scale, self.hwnd
+            match_result[0], template_size, self.dpi_scale,
+            self.hwnd, click_position_ratio
         )
 
         if coordinates:
             coordinates.update({
                 'confidence': match_result[1],
                 'template_size': template_size,
-                'template_path': template_path
+                'template_path': template_path,
+                'click_position_ratio': click_position_ratio
             })
 
         return coordinates
@@ -347,39 +497,56 @@ class WindowController:
 
     @staticmethod
     def _calculate_match_coordinates(match_loc: Tuple[int, int], template_size: Tuple[int, int],
-                                     scale_ratio: float, hwnd: int) -> Optional[Dict]:
-        """计算匹配位置的各种坐标"""
+                                     scale_ratio: float, hwnd: int,
+                                     click_position_ratio: tuple = (0.5, 0.5)) -> Optional[Dict]:
+        """
+        计算匹配位置的各种坐标
+
+        Args:
+            match_loc: 模板匹配位置 (x, y)
+            template_size: 模板大小 (width, height)
+            scale_ratio: DPI缩放比例
+            hwnd: 窗口句柄
+            click_position_ratio: 点击位置比例 (x_ratio, y_ratio)
+
+        Returns:
+            包含坐标信息的字典或None
+        """
         if match_loc is None:
             return None
 
         match_x, match_y = match_loc
         template_w, template_h = template_size
 
-        # 在缩放图像中的中心点
-        center_x_scaled = match_x + template_w // 2
-        center_y_scaled = match_y + template_h // 2
+        # 根据比例计算点击位置
+        # 示例：(0.5, 0.5) = 中心点，(0.25, 0.25) = 四分之一点
+        click_x_scaled = match_x + int(template_w * click_position_ratio[0])
+        click_y_scaled = match_y + int(template_h * click_position_ratio[1])
 
         # 转换回物理像素坐标
-        physical_center_x = int(center_x_scaled * scale_ratio)
-        physical_center_y = int(center_y_scaled * scale_ratio)
+        click_x_physical = int(click_x_scaled * scale_ratio)
+        click_y_physical = int(click_y_scaled * scale_ratio)
 
         # 窗口矩形信息
         left, top, right, bottom = win32gui.GetWindowRect(hwnd)
 
         # 转换为屏幕坐标
-        screen_x = left + physical_center_x
-        screen_y = top + physical_center_y
+        screen_x = left + click_x_physical
+        screen_y = top + click_y_physical
 
         # 转换为窗口客户区坐标
         client_x, client_y = win32gui.ScreenToClient(hwnd, (screen_x, screen_y))
 
         return {
             'match_position_scaled': (match_x, match_y),
-            'center_position_scaled': (center_x_scaled, center_y_scaled),
-            'center_position_physical': (physical_center_x, physical_center_y),
+            'click_position_scaled': (click_x_scaled, click_y_scaled),
+            'click_position_physical': (click_x_physical, click_y_physical),
             'screen_position': (screen_x, screen_y),
             'client_position': (client_x, client_y),
-            'window_rect': (left, top, right, bottom)
+            'window_rect': (left, top, right, bottom),
+            'click_position_ratio': click_position_ratio,
+            'template_center_scaled': (match_x + template_w // 2, match_y + template_h // 2),
+            'template_size': template_size
         }
 
     def click(self, x: int = None, y: int = None, coordinates: Dict = None,
@@ -440,7 +607,8 @@ class WindowController:
             return False
 
     def click_template(self, template_path: str, confidence: float = 0.7,
-                       button: str = 'left', click_type: str = 'single') -> bool:
+                       button: str = 'left', click_type: str = 'single',
+                       click_position_ratio: tuple = (0.5, 0.5)) -> bool:
         """
         查找模板并点击
 
@@ -449,11 +617,17 @@ class WindowController:
             confidence: 匹配置信度阈值
             button: 鼠标按钮
             click_type: 点击类型
+            click_position_ratio: 点击位置比例 (x_ratio, y_ratio)
+                                  默认(0.5, 0.5)表示中心点
 
         Returns:
             是否成功点击
         """
-        coordinates = self.find_template(template_path, confidence)
+        coordinates = self.find_template(
+            template_path,
+            confidence,
+            click_position_ratio=click_position_ratio
+        )
 
         if not coordinates:
             print(f"❌ 未找到模板: {template_path}")
@@ -489,79 +663,45 @@ Launcher_path = r"C:\Program Files (x86)\webcast_mate\直播伴侣 Launcher.exe"
 
 controller = WindowController(Launcher_path)
 
-hwnd_dict = controller.find_window("Chrome_WidgetWin_1", "直播伴侣")
+controller.find_window("Chrome_WidgetWin_1", "直播伴侣")  # 启动直播伴侣
+
+# for hwnd in controller._get_windows("Chrome_WidgetWin_1", "直播伴侣"):  # 区分主窗口，副窗口，遮罩窗口
+#     controller.set_window_handle(hwnd)
+#     ccw = controller.capture_window()
+#     if ccw:
+#         # ccw.show()
+#         print(controller.find_template("sec_failed_resume_live.png"))
 
 def start_live():
-    windows_statue = {
-        "main_windows": {
-            "statue": False,
-            "template_image": "live_streaming_partner.png",
-            "introduction": "直播伴侣主窗口",
-            "type": "主窗口",
-        },
-        "start_live_windows": {
-            "statue": False,
-            "template_image": "start_live.png",
-            "introduction": "直播伴侣开始直播[按钮]窗口",
-            "type": "主窗口",
-        },
-        "start_live_ing_windows": {
-            "statue": False,
-            "template_image": "start_live_ing.png",
-            "introduction": "直播伴侣开始中…[按钮]窗口",
-            "type": "主窗口",
-        },
-        "stop_live_windows": {
-            "statue": False,
-            "template_image": "stop_live.png",
-            "introduction": "直播伴侣关播[按钮]窗口",
-            "type": "主窗口",
-        },
-        "no_sound_reminder_windows": {
-            "statue": False,
-            "template_image": "no_sound_reminder.png",
-            "introduction": "直播无声音[提示]窗口",
-            "type": "副窗口",
-        },
-        "true_stop_live_is_windows": {
-            "statue": False,
-            "template_image": "true_stop_live_is.png",
-            "introduction": "确认要结束当前直播吗？[提示]窗口",
-            "type": "副窗口",
-        },
-        "live_ended_windows": {
-            "statue": False,
-            "template_image": "live_ended.png",
-            "introduction": "直播伴侣直播已结束窗口",
-            "type": "主窗口",
-        },
-        "confirm_withdrawal_windows": {
-            "statue": False,
-            "template_image": "confirm_withdrawal.png",
-            "introduction": "确认退出吗？[提示]窗口",
-            "type": "副窗口",
-        },
-        "restore_live_broadcast_screen_windows": {
-            "statue": False,
-            "template_image": "restore_live_broadcast_screen.png",
-            "introduction": "恢复直播画面[提示]窗口",
-            "type": "副窗口",
-        },
-        "failed_resume_live_windows": {
-            "statue": False,
-            "template_image": "failed_resume_live.png",
-            "introduction": "恢复开播失败[提示]窗口",
-            "type": "副窗口",
-        },
-    }
-    for hwnd in controller._get_windows("Chrome_WidgetWin_1", "直播伴侣"):
-        controller.set_window_handle(hwnd)
-        placement = win32gui.GetWindowPlacement(hwnd)
-        if placement[1] == win32con.SW_SHOWMINIMIZED:
-            win32gui.ShowWindow(hwnd, win32con.SW_SHOWNORMAL)  # 正常显示窗口
-            time.sleep(0.5)
-
-        print(controller.click_template("live_streaming_partner.png"))
+    start_live_is = False
+    while not start_live_is:
+        controller.find_window("Chrome_WidgetWin_1", "直播伴侣")  # 启动直播伴侣
+        for hwnd in controller._get_windows("Chrome_WidgetWin_1", "直播伴侣"):  # 区分主窗口，副窗口，遮罩窗口
+            controller.set_window_handle(hwnd)
+            placement = win32gui.GetWindowPlacement(hwnd)
+            if placement[1] == win32con.SW_SHOWMINIMIZED:
+                win32gui.ShowWindow(hwnd, win32con.SW_SHOWNORMAL)  # 正常显示窗口
+                time.sleep(0.5)
+            if controller.capture_window():
+                if controller.find_template("main_stop_live.png"):
+                    start_live_is = True
+                    break
+                if controller.click_template("main_start_living.png"):
+                    continue
+                if controller.click_template("main_live_stopped_return.png"):
+                    continue
+                if controller.click_template("sec_restore_live_broadcast_screen.png", 0.85, click_position_ratio=(0.75, 0.875)):
+                    continue
+                if controller.click_template("sec_failed_resume_live.png", 0.85, click_position_ratio=(0.75, 0.75)):
+                    continue
+                if controller.click_template("sec_no_sound_reminder.png", 0.85, click_position_ratio=(0.5, 0.875)):
+                    continue
+                if controller.click_template("sec_confirm_withdrawal.png", 0.85, click_position_ratio=(0.25, 0.875)):
+                    continue
+                if controller.click_template("sec_confirm_withdrawal_live.png", 0.85, click_position_ratio=(0.25, 0.875)):
+                    continue
+                if controller.click_template("sec_true_stop_live_is.png", 0.85, click_position_ratio=(0.25, 0.875)):
+                    continue
 
 start_live()
 exit()
