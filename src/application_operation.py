@@ -1,6 +1,5 @@
 import ctypes
 import subprocess
-import threading
 
 # 尝试设置为“每显示器DPI感知”，这是最推荐的方式
 try:
@@ -18,7 +17,7 @@ except Exception as e:
 import os
 import time
 from ctypes import windll
-from typing import Union, Optional, Tuple, Dict, List
+from typing import Optional, Tuple, Dict, List
 
 import cv2
 import numpy as np
@@ -678,6 +677,7 @@ class WindowController:
         except:
             return None
 
+
 # 使用示例
 if __name__ == "__main__":
     # 检查"Chrome_WidgetWin_1", "直播伴侣"的窗口
@@ -705,18 +705,22 @@ if __name__ == "__main__":
                         continue
                     if controller.click_template("main_live_stopped_return.png"):
                         continue
-                    if controller.click_template("sec_restore_live_broadcast_screen.png", 0.85, click_position_ratio=(0.75, 0.875)):
+                    if controller.click_template("sec_restore_live_broadcast_screen.png", 0.85,
+                                                 click_position_ratio=(0.75, 0.875)):
                         continue
                     if controller.click_template("sec_failed_resume_live.png", 0.85, click_position_ratio=(0.75, 0.75)):
                         continue
                     if controller.click_template("sec_no_sound_reminder.png", 0.85, click_position_ratio=(0.5, 0.875)):
                         continue
-                    if controller.click_template("sec_confirm_withdrawal.png", 0.85, click_position_ratio=(0.25, 0.875)):
+                    if controller.click_template("sec_confirm_withdrawal.png", 0.85,
+                                                 click_position_ratio=(0.25, 0.875)):
                         continue
-                    if controller.click_template("sec_confirm_withdrawal_live.png", 0.85, click_position_ratio=(0.25, 0.875)):
+                    if controller.click_template("sec_confirm_withdrawal_live.png", 0.85,
+                                                 click_position_ratio=(0.25, 0.875)):
                         continue
                     if controller.click_template("sec_true_stop_live_is.png", 0.85, click_position_ratio=(0.25, 0.875)):
                         continue
+
 
     def stop_live():
         """关闭直播"""
@@ -737,19 +741,23 @@ if __name__ == "__main__":
                         continue
                     if controller.click_template("main_stop_live.png"):
                         continue
-                    if controller.click_template("sec_restore_live_broadcast_screen.png", 0.85, click_position_ratio=(0.75, 0.875)):
+                    if controller.click_template("sec_restore_live_broadcast_screen.png", 0.85,
+                                                 click_position_ratio=(0.75, 0.875)):
                         continue
                     if controller.click_template("sec_failed_resume_live.png", 0.85, click_position_ratio=(0.75, 0.75)):
                         continue
                     if controller.click_template("sec_no_sound_reminder.png", 0.85, click_position_ratio=(0.5, 0.875)):
                         continue
-                    if controller.click_template("sec_confirm_withdrawal.png", 0.85, click_position_ratio=(0.25, 0.875)):
+                    if controller.click_template("sec_confirm_withdrawal.png", 0.85,
+                                                 click_position_ratio=(0.25, 0.875)):
                         continue
-                    if controller.click_template("sec_confirm_withdrawal_live.png", 0.85, click_position_ratio=(0.25, 0.875)):
+                    if controller.click_template("sec_confirm_withdrawal_live.png", 0.85,
+                                                 click_position_ratio=(0.25, 0.875)):
                         continue
                     if controller.click_template("sec_true_stop_live_is.png", 0.85, click_position_ratio=(0.75, 0.875)):
                         time.sleep(2)
                         continue
+
 
     def clear_live():
         """关闭程序"""

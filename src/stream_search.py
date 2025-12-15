@@ -1,9 +1,8 @@
-import json
 import re
 import subprocess
 import threading
 import time
-from typing import List, Tuple, Optional, Callable, Any, Union
+from typing import List, Optional, Callable, Any, Union
 
 
 class TsharkCapturer:
@@ -430,6 +429,7 @@ if __name__ == "__main__":
         "amf.string == \"publish\")"
     )
 
+
     # 设置自定义字段（可选）
     # capturer.set_fields(['frame.number', 'ip.src', 'ip.dst', 'tcp.srcport', 'tcp.dstport'])
 
@@ -543,9 +543,8 @@ if __name__ == "__main__":
 
         return results
 
+
     for stream_info in extract_stream_info(",".join(capturer.get_captured_data())):
         print(stream_info['command'], stream_info['stream_code'], stream_info['server'])
 
-
     print("\n捕获结束")
-
