@@ -683,305 +683,100 @@ Launcher_path = r"C:\Program Files (x86)\webcast_mate\直播伴侣 Launcher.exe"
 
 controller = WindowController(Launcher_path)
 
-controller.find_window("Chrome_WidgetWin_1", "直播伴侣")  # 启动直播伴侣
-
-# for hwnd in controller._get_windows("Chrome_WidgetWin_1", "直播伴侣"):  # 区分主窗口，副窗口，遮罩窗口
-#     controller.set_window_handle(hwnd)
-#     ccw = controller.capture_window()
-#     if ccw:
-#         # ccw.show()
-#         print(controller.find_template("main_start_live.png"))
-
-def start_live():
-    start_live_is = False
-    while not start_live_is:
-        controller.find_window("Chrome_WidgetWin_1", "直播伴侣")  # 启动直播伴侣
-        for hwnd in controller._get_windows("Chrome_WidgetWin_1", "直播伴侣"):  # 区分主窗口，副窗口，遮罩窗口
-            controller.set_window_handle(hwnd)
-            placement = win32gui.GetWindowPlacement(hwnd)
-            if placement[1] == win32con.SW_SHOWMINIMIZED:
-                win32gui.ShowWindow(hwnd, win32con.SW_SHOWNORMAL)  # 正常显示窗口
-                time.sleep(0.5)
-            if controller.capture_window():
-                if controller.find_template("main_stop_live.png"):
-                    start_live_is = True
-                    break
-                if controller.click_template("main_start_live.png"):
-                    continue
-                if controller.click_template("main_live_stopped_return.png"):
-                    continue
-                if controller.click_template("sec_restore_live_broadcast_screen.png", 0.85, click_position_ratio=(0.75, 0.875)):
-                    continue
-                if controller.click_template("sec_failed_resume_live.png", 0.85, click_position_ratio=(0.75, 0.75)):
-                    continue
-                if controller.click_template("sec_no_sound_reminder.png", 0.85, click_position_ratio=(0.5, 0.875)):
-                    continue
-                if controller.click_template("sec_confirm_withdrawal.png", 0.85, click_position_ratio=(0.25, 0.875)):
-                    continue
-                if controller.click_template("sec_confirm_withdrawal_live.png", 0.85, click_position_ratio=(0.25, 0.875)):
-                    continue
-                if controller.click_template("sec_true_stop_live_is.png", 0.85, click_position_ratio=(0.25, 0.875)):
-                    continue
-
-start_live()
-exit()
-class glb:
-    now_window_statue = {
-        "main_windows": {
-            "statue": False,
-            "template_image": "live_streaming_partner.png",
-            "introduction": "直播伴侣主窗口",
-            "hwnd": 0,
-        },
-        "start_live_windows": {
-            "statue": False,
-            "template_image": "start_live.png",
-            "introduction": "直播伴侣开始直播[按钮]窗口",
-            "hwnd": 0,
-        },
-        "start_live_ing_windows": {
-            "statue": False,
-            "template_image": "start_live_ing.png",
-            "introduction": "直播伴侣开始中…[按钮]窗口",
-            "hwnd": 0,
-        },
-        "stop_live_windows": {
-            "statue": False,
-            "template_image": "stop_live.png",
-            "introduction": "直播伴侣关播[按钮]窗口",
-            "hwnd": 0,
-        },
-        "no_sound_reminder_windows": {
-            "statue": False,
-            "template_image": "no_sound_reminder.png",
-            "introduction": "直播无声音[提示]窗口",
-            "hwnd": 0,
-        },
-        "true_stop_live_is_windows": {
-            "statue": False,
-            "template_image": "true_stop_live_is.png",
-            "introduction": "确认要结束当前直播吗？[提示]窗口",
-            "hwnd": 0,
-        },
-        "live_ended_windows": {
-            "statue": False,
-            "template_image": "live_ended.png",
-            "introduction": "直播伴侣直播已结束窗口",
-            "hwnd": 0,
-        },
-        "confirm_withdrawal_windows": {
-            "statue": False,
-            "template_image": "confirm_withdrawal.png",
-            "introduction": "确认退出吗？[提示]窗口",
-            "hwnd": 0,
-        },
-        "restore_live_broadcast_screen_windows": {
-            "statue": False,
-            "template_image": "restore_live_broadcast_screen.png",
-            "introduction": "恢复直播画面[提示]窗口",
-            "hwnd": 0,
-        },
-        "failed_resume_live_windows": {
-            "statue": False,
-            "template_image": "failed_resume_live.png",
-            "introduction": "恢复开播失败[提示]窗口",
-            "hwnd": 0,
-        },
-    }
-    old_window_statue = {
-        "main_windows": {
-            "statue": False,
-            "template_image": "live_streaming_partner.png",
-            "introduction": "直播伴侣主窗口",
-            "hwnd": 0,
-        },
-        "start_live_windows": {
-            "statue": False,
-            "template_image": "start_live.png",
-            "introduction": "直播伴侣开始直播[按钮]窗口",
-            "hwnd": 0,
-        },
-        "start_live_ing_windows": {
-            "statue": False,
-            "template_image": "start_live_ing.png",
-            "introduction": "直播伴侣开始中…[按钮]窗口",
-            "hwnd": 0,
-        },
-        "stop_live_windows": {
-            "statue": False,
-            "template_image": "stop_live.png",
-            "introduction": "直播伴侣关播[按钮]窗口",
-            "hwnd": 0,
-        },
-        "no_sound_reminder_windows": {
-            "statue": False,
-            "template_image": "no_sound_reminder.png",
-            "introduction": "直播无声音[提示]窗口",
-            "hwnd": 0,
-        },
-        "true_stop_live_is_windows": {
-            "statue": False,
-            "template_image": "true_stop_live_is.png",
-            "introduction": "确认要结束当前直播吗？[提示]窗口",
-            "hwnd": 0,
-        },
-        "live_ended_windows": {
-            "statue": False,
-            "template_image": "live_ended.png",
-            "introduction": "直播伴侣直播已结束窗口",
-            "hwnd": 0,
-        },
-        "confirm_withdrawal_windows": {
-            "statue": False,
-            "template_image": "confirm_withdrawal.png",
-            "introduction": "确认退出吗？[提示]窗口",
-            "hwnd": 0,
-        },
-        "restore_live_broadcast_screen_windows": {
-            "statue": False,
-            "template_image": "restore_live_broadcast_screen.png",
-            "introduction": "恢复直播画面[提示]窗口",
-            "hwnd": 0,
-        },
-        "failed_resume_live_windows": {
-            "statue": False,
-            "template_image": "failed_resume_live.png",
-            "introduction": "恢复开播失败[提示]窗口",
-            "hwnd": 0,
-        },
-    }
-    check_window_statue_is = False
-
-
-def check_now() -> dict[str, Union[dict[str, Union[int, str, bool]], None]]:
-    windows_hwnd = controller._get_windows("Chrome_WidgetWin_1", "直播伴侣")
-    if windows_hwnd:
-        for hwnd in windows_hwnd.copy():
-            controller.set_window_handle(hwnd)
-            placement = win32gui.GetWindowPlacement(hwnd)
-            if placement[1] == win32con.SW_SHOWMINIMIZED:
-                win32gui.ShowWindow(hwnd, win32con.SW_SHOWNORMAL)  # 正常显示窗口
-            for windows in glb.now_window_statue.copy():
-                coordinates = controller.find_template(template_path=glb.now_window_statue[windows]["template_image"])
-                if coordinates:
-                    glb.now_window_statue[windows]["statue"] = True
-                    glb.now_window_statue[windows]["hwnd"] = hwnd
-    else:
-        return {}
-    return glb.now_window_statue
-
-
-check_now()
-def thread_check_now():
-    thread = threading.Thread(target=check_now)
-    thread.daemon = True  # 设置为守护线程，主程序退出时会自动结束
-    thread.start()
-
-
-def time_check_now():
-    glb.check_window_statue_is = True
-    while glb.check_window_statue_is:
-        thread_check_now()
-        time.sleep(0.3)
-
-
-thread = threading.Thread(target=time_check_now)
-thread.daemon = True  # 设置为守护线程，主程序退出时会自动结束
-thread.start()
-
-
-def click_img(now_window_statue, wn, img):
-    if now_window_statue[wn]["statue"]:
-        hwnd = now_window_statue[wn]["hwnd"]
-        controller.set_window_handle(hwnd)
-        try:
-            print(controller.click_template(img))
-        except:
-            return False
-    return now_window_statue[wn]["statue"]
-
-
-def start_live():
-    start_live_is = False
-    while not start_live_is:
-        now_window_statue = glb.now_window_statue
-        if now_window_statue:
-            if now_window_statue["main_windows"]["statue"]:
-                if now_window_statue["stop_live_windows"]["statue"]:
-                    break
-                click_img(now_window_statue, "start_live_windows", "start_live.png")
-                click_img(now_window_statue, "live_ended_windows", "return.png")
-                time.sleep(2)
-                now_window_statue = glb.now_window_statue
-                click_img(now_window_statue, "restore_live_broadcast_screen_windows","restore_live_broadcast_screen_true.png")
-                click_img(now_window_statue, "failed_resume_live_windows", "failed_resume_live_true.png")
-                click_img(now_window_statue, "no_sound_reminder_windows", "no_sound_reminder_true.png")
-                click_img(now_window_statue, "confirm_withdrawal_windows", "confirm_withdrawal_cancel.png")
-                click_img(now_window_statue, "true_stop_live_is_windows", "true_stop_live_is_cancel.png")
-            else:
-                # print("窗口未打开")
-                pass
-        else:
-            # print("程序未启动")
-            pass
-            subprocess.run([Launcher_path])
-
-
-def stop_live():
-    stop_live_is = False
-    while not stop_live_is:
-        now_window_statue = glb.now_window_statue
-        if now_window_statue:
-            if now_window_statue["main_windows"]["statue"]:
-                if now_window_statue["start_live_windows"]["statue"]:
-                    stop_live_is = True
-                    time.sleep(3)
-                click_img(now_window_statue, "live_ended_windows", "return.png")
-                click_img(now_window_statue, "stop_live_windows", "stop_live.png")
-                time.sleep(2)
-                now_window_statue = glb.now_window_statue
-                if click_img(now_window_statue, "restore_live_broadcast_screen_windows",
-                             "restore_live_broadcast_screen_true.png"):
-                    stop_live_is = False
-                if click_img(now_window_statue, "failed_resume_live_windows", "failed_resume_live_true.png"):
-                    stop_live_is = False
-                click_img(now_window_statue, "no_sound_reminder_windows", "no_sound_reminder_true.png")
-                click_img(now_window_statue, "confirm_withdrawal_windows", "confirm_withdrawal_cancel.png")
-                click_img(now_window_statue, "true_stop_live_is_windows", "true_stop_live_is_true.png")
-            else:
-                # print("窗口未打开")
-                pass
-        else:
-            # print("程序未启动")
-            pass
-            subprocess.run([Launcher_path])
-
-
-def clear_live():
-    now_window_statue = glb.now_window_statue
-    while now_window_statue:
-        if now_window_statue["main_windows"]["statue"]:
-            if click_img(now_window_statue, "confirm_withdrawal_windows", "confirm_withdrawal_true.png"):
-                break
-            else:
-                try:
-                    # 关闭窗口（向窗口发送关闭消息）[citation:10]
-                    win32gui.PostMessage(now_window_statue["main_windows"]["hwnd"], win32con.WM_CLOSE, 0, 0)
-                    time.sleep(1)
-                except Exception as e:
-                    pass
-        else:
-            # print("窗口未打开")
-            pass
-        now_window_statue = glb.now_window_statue
-
 # 使用示例
-# if __name__ == "__main__":
-# start_time = time.time()
-# hwnd = win32gui.GetForegroundWindow()
-start_live()
-# stop_live()
-# clear_live()
-# # 将窗口置于前台[citation:6]
-# win32gui.SetForegroundWindow(hwnd)
-# print(time.time() - start_time)
+if __name__ == "__main__":
+    def start_live():
+        """开始直播"""
+        start_live_is = False
+        while not start_live_is:
+            controller.find_window("Chrome_WidgetWin_1", "直播伴侣")  # 启动直播伴侣
+            for hwnd in controller._get_windows("Chrome_WidgetWin_1", "直播伴侣"):  # 区分主窗口，副窗口，遮罩窗口
+                controller.set_window_handle(hwnd)
+                placement = win32gui.GetWindowPlacement(hwnd)
+                if placement[1] == win32con.SW_SHOWMINIMIZED:
+                    win32gui.ShowWindow(hwnd, win32con.SW_SHOWNORMAL)  # 正常显示窗口
+                    time.sleep(0.5)
+                if controller.capture_window():
+                    if controller.find_template("main_stop_live.png"):
+                        start_live_is = True
+                        break
+                    if controller.click_template("main_start_live.png"):
+                        continue
+                    if controller.click_template("main_live_stopped_return.png"):
+                        continue
+                    if controller.click_template("sec_restore_live_broadcast_screen.png", 0.85, click_position_ratio=(0.75, 0.875)):
+                        continue
+                    if controller.click_template("sec_failed_resume_live.png", 0.85, click_position_ratio=(0.75, 0.75)):
+                        continue
+                    if controller.click_template("sec_no_sound_reminder.png", 0.85, click_position_ratio=(0.5, 0.875)):
+                        continue
+                    if controller.click_template("sec_confirm_withdrawal.png", 0.85, click_position_ratio=(0.25, 0.875)):
+                        continue
+                    if controller.click_template("sec_confirm_withdrawal_live.png", 0.85, click_position_ratio=(0.25, 0.875)):
+                        continue
+                    if controller.click_template("sec_true_stop_live_is.png", 0.85, click_position_ratio=(0.25, 0.875)):
+                        continue
+
+    def stop_live():
+        """关闭直播"""
+        stop_live_is = False
+        while not stop_live_is:
+            controller.find_window("Chrome_WidgetWin_1", "直播伴侣")  # 启动直播伴侣
+            for hwnd in controller._get_windows("Chrome_WidgetWin_1", "直播伴侣"):  # 区分主窗口，副窗口，遮罩窗口
+                controller.set_window_handle(hwnd)
+                placement = win32gui.GetWindowPlacement(hwnd)
+                if placement[1] == win32con.SW_SHOWMINIMIZED:
+                    win32gui.ShowWindow(hwnd, win32con.SW_SHOWNORMAL)  # 正常显示窗口
+                    time.sleep(0.5)
+                if controller.capture_window():
+                    if controller.find_template("main_live_stopped_return.png"):
+                        stop_live_is = True
+                        break
+                    if controller.click_template("main_start_live.png"):
+                        continue
+                    if controller.click_template("main_stop_live.png"):
+                        continue
+                    if controller.click_template("sec_restore_live_broadcast_screen.png", 0.85, click_position_ratio=(0.75, 0.875)):
+                        continue
+                    if controller.click_template("sec_failed_resume_live.png", 0.85, click_position_ratio=(0.75, 0.75)):
+                        continue
+                    if controller.click_template("sec_no_sound_reminder.png", 0.85, click_position_ratio=(0.5, 0.875)):
+                        continue
+                    if controller.click_template("sec_confirm_withdrawal.png", 0.85, click_position_ratio=(0.25, 0.875)):
+                        continue
+                    if controller.click_template("sec_confirm_withdrawal_live.png", 0.85, click_position_ratio=(0.25, 0.875)):
+                        continue
+                    if controller.click_template("sec_true_stop_live_is.png", 0.85, click_position_ratio=(0.75, 0.875)):
+                        time.sleep(2)
+                        continue
+
+    def clear_live():
+        """关闭程序"""
+        hwnds = controller._get_windows("Chrome_WidgetWin_1", "直播伴侣")
+        while hwnds:
+            for hwnd in hwnds:
+                controller.set_window_handle(hwnd)
+                placement = win32gui.GetWindowPlacement(hwnd)
+                if placement[1] == win32con.SW_SHOWMINIMIZED:
+                    win32gui.ShowWindow(hwnd, win32con.SW_SHOWNORMAL)  # 正常显示窗口
+                    time.sleep(0.5)
+                if controller.capture_window():
+                    win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)  # 关闭窗口（向窗口发送关闭消息）[citation:10]
+                    time.sleep(3)
+            for hwnd in hwnds:
+                controller.set_window_handle(hwnd)
+                controller.click_template("sec_confirm_withdrawal.png", 0.85, click_position_ratio=(0.75, 0.875))
+                controller.click_template("sec_confirm_withdrawal_live.png", 0.85, click_position_ratio=(0.75, 0.875))
+            time.sleep(5)
+            hwnds = controller._get_windows("Chrome_WidgetWin_1", "直播伴侣")
+
+
+    start_time = time.time()
+    hwnd = win32gui.GetForegroundWindow()
+    start_live()
+    clear_live()
+    stop_live()
+    clear_live()
+    # 将窗口置于前台[citation:6]
+    win32gui.SetForegroundWindow(hwnd)
+    print(time.time() - start_time)
