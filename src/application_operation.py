@@ -40,7 +40,7 @@ class WindowController:
         Args:
             launcher_path: 应用程序启动路径
         """
-        self.img_tmp_dir = "img_tmp"
+        self.img_tmp_dir = "../img_tmp"
         self._set_dpi_awareness()
         self.launcher_path = launcher_path
         self.hwnd = None  # 当前操作的窗口句柄
@@ -678,13 +678,14 @@ class WindowController:
         except:
             return None
 
-# 检查"Chrome_WidgetWin_1", "直播伴侣"的窗口
-Launcher_path = r"C:\Program Files (x86)\webcast_mate\直播伴侣 Launcher.exe"
-
-controller = WindowController(Launcher_path)
-
 # 使用示例
 if __name__ == "__main__":
+    # 检查"Chrome_WidgetWin_1", "直播伴侣"的窗口
+    Launcher_path = r"C:\Program Files (x86)\webcast_mate\直播伴侣 Launcher.exe"
+
+    controller = WindowController(Launcher_path)
+
+
     def start_live():
         """开始直播"""
         start_live_is = False
